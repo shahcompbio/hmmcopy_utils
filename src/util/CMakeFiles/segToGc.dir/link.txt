@@ -1,0 +1,1 @@
+/usr/bin/c++   -O3 -DNDEBUG    CMakeFiles/segToGc.dir/seg/segToGc.cpp.o  -o ../../util/seg/segToGc -rdynamic ../../lib/libfastahack.a ../../lib/libsplit.a 

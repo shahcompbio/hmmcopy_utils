@@ -1,0 +1,1 @@
+/usr/bin/c++   -O3 -DNDEBUG    CMakeFiles/fastaToRead.dir/mappability/internal/fastaToRead.cpp.o  -o ../../util/mappability/internal/fastaToRead -rdynamic ../../lib/libfastahack.a ../../lib/libsplit.a 

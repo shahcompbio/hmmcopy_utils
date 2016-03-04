@@ -1,0 +1,1 @@
+/usr/bin/c++   -O3 -DNDEBUG    CMakeFiles/segToMap.dir/seg/segToMap.cpp.o  -o ../../util/seg/segToMap -rdynamic ../../lib/libkent.a ../../lib/libsplit.a -lm -lz 

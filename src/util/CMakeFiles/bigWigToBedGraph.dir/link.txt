@@ -1,0 +1,1 @@
+/usr/bin/gcc  -O3 -DNDEBUG    CMakeFiles/bigWigToBedGraph.dir/bigwig/bigWigToBedGraph.c.o  -o ../../util/bigwig/bigWigToBedGraph -rdynamic ../../lib/libkent.a -lm -lz 
