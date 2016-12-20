@@ -1,6 +1,6 @@
 correctReadcount suite - various tools for correcting GC content bias in readcounts
 
-Author: Daniel Lai <jujubix@cs.ubc.ca> Department of Molecular Oncology, BC Cancer Research Agency
+Author: Daniel Lai <dalai@bccrc.ca> Department of Molecular Oncology, BC Cancer Research Agency
 Date:   August 02, 2011
 
 Installation:
