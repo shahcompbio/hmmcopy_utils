@@ -34,9 +34,9 @@ Browser source code (i.e. kent library)[3] made available by Jim Kent.  Generati
 mappability files in 1000 base windows (default) on hg18 took 160 seconds on a 3.06 GHz Intel
 Core 2 Duo with 8GB RAM.
 
-[1] http://genome.ucsc.edu/cgi-bin/hgTrackUi?g=wgEncodeMapability
-[2] http://genome.ucsc.edu/goldenPath/help/bigWig.html
-[3] http://genome.ucsc.edu/admin/git.html
+[1]: http://genome.ucsc.edu/cgi-bin/hgTrackUi?g=wgEncodeMapability
+[2]: http://genome.ucsc.edu/goldenPath/help/bigWig.html
+[3]: http://genome.ucsc.edu/admin/git.html
 
 Features:
 
