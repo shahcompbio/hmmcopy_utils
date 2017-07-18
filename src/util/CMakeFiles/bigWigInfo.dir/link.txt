@@ -1,1 +1,0 @@
-/usr/bin/gcc  -O3 -DNDEBUG    CMakeFiles/bigWigInfo.dir/bigwig/bigWigInfo.c.o  -o ../../util/bigwig/bigWigInfo -rdynamic ../../lib/libkent.a -lm -lz 
