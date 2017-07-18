@@ -27,7 +27,7 @@ Should result in main binaries in /bin and useful binaries in /util
 
 Overview:
 
-mapCounter is a small program for calculating average mappability[1] for non-overlapping
+mapCounter is a small program for calculating average mappability[1][1] for non-overlapping
 windows of fixed width across all sequences (i.e. chromosomes) present in a BigWig file[2].
 It is built mainly on top of an independent subset of files obtained from the UCSC Genome
 Browser source code (i.e. kent library)[3] made available by Jim Kent.  Generating average
