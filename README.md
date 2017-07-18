@@ -27,16 +27,16 @@ Should result in main binaries in /bin and useful binaries in /util
 
 Overview:
 
-mapCounter is a small program for calculating average mappability[1][1] for non-overlapping
-windows of fixed width across all sequences (i.e. chromosomes) present in a BigWig file[2].
-It is built mainly on top of an independent subset of files obtained from the UCSC Genome
-Browser source code (i.e. kent library)[3] made available by Jim Kent.  Generating average
-mappability files in 1000 base windows (default) on hg18 took 160 seconds on a 3.06 GHz Intel
-Core 2 Duo with 8GB RAM.
+mapCounter is a small program for calculating average [mappability] for non-overlapping
+windows of fixed width across all sequences (i.e. chromosomes) present in a [BigWig file].
+It is built mainly on top of an independent subset of files obtained from the
+[UCSC Genome Browser source code] (i.e. kent library) made available by Jim Kent.
+Generating average mappability files in 1000 base windows (default) on hg18 took 160
+seconds on a 3.06 GHz Intel Core 2 Duo with 8GB RAM.
 
-[1]: http://genome.ucsc.edu/cgi-bin/hgTrackUi?g=wgEncodeMapability
-[2]: http://genome.ucsc.edu/goldenPath/help/bigWig.html
-[3]: http://genome.ucsc.edu/admin/git.html
+[mappability]: http://genome.ucsc.edu/cgi-bin/hgTrackUi?g=wgEncodeMapability
+[BigWig file]: http://genome.ucsc.edu/goldenPath/help/bigWig.html
+[UCSC Genome Browser source code]: http://genome.ucsc.edu/admin/git.html
 
 Features:
 
@@ -90,10 +90,10 @@ Fast and memory efficient counting of reads in BAM files
 Overview:
 
 mapCounter is a small program for counting the number of reads in non-overlapping
-windows of fixed width directly from BAM files.  It is build on top of the BamTools
-API[1] made available by Derek Barnett on GitHub (https://github.com/pezmaster31/bamtools).
+windows of fixed width directly from BAM files.  It is build on top of the [BamTools API]
+made available by Derek Barnett on GitHub (https://github.com/pezmaster31/bamtools).
 
-[1] http://bioinformatics.oxfordjournals.org/content/27/12/1691
+[BamTools API]: http://bioinformatics.oxfordjournals.org/content/27/12/1691
 
 Features:
 
