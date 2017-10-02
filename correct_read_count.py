@@ -14,6 +14,11 @@ import argparse
 
 
 class CorrectReadCount(object):
+    """
+    fit lowess/polynomial curve smoothing to reads-gc
+    use fitted model to predict corrected gc and mappability
+    values
+    """
 
     def __init__(self, gc, mapp, wig, output, mappability=0.9,
                  smoothing_function='lowess',
@@ -27,13 +32,13 @@ class CorrectReadCount(object):
         self.wig = wig
         self.output = output
 
-    # OPTIONS
-    # read wig, convert to df.
-    # read gc and map and load as you read. might be slower though
+    def read_wig(self, infile, counts=False):
+        """read wiggle files
 
-    # read to wig, convrt to df. read gc and map to array. merge into wig df
-    # might have issues if sort order etc is messed up in the input data.
-    def read_wig(self, infile, reads=False):
+        :param infile: input wiggle file
+        :param counts: set to true if infile wiggle has integer values
+        """
+
         data = []
 
         with open(infile) as wig:
@@ -49,7 +54,7 @@ class CorrectReadCount(object):
 
                     bin_start = 0 if start < winsize else start / winsize
                 else:
-                    value = int(line) if reads else float(line)
+                    value = int(line) if counts else float(line)
                     data.append((chrom, (bin_start * winsize) + 1,
                                  (bin_start + 1) * winsize, value))
                     bin_start += 1
@@ -57,11 +62,24 @@ class CorrectReadCount(object):
         return data
 
     def create_dataframe(self, reads, mapp, gc):
+        """merge data from reads, mappability and gc wig files
+        into pandas dataframe
+
+        :param reads: list of tuples, formatted as [(chromosome,
+                    start, end, count), ]
+        :param mapp: list of tuples, formatted as [(chromosome,
+                    start, end, mappability value), ]
+        :param reads: list of tuples, formatted as [(chromosome,
+                    start, end, gc content), ]
+        """
+        err_str = 'please ensure that reads, mappability and '\
+            'gc wig files have the same sort order'
+
         data = []
         for read_v, mapp_v, gc_v in zip(reads, mapp, gc):
-            assert read_v[0] == mapp_v[0] == gc_v[0]
-            assert read_v[1] == mapp_v[1] == gc_v[1]
-            assert read_v[2] == mapp_v[2] == gc_v[2]
+            assert read_v[0] == mapp_v[0] == gc_v[0], err_str
+            assert read_v[1] == mapp_v[1] == gc_v[1], err_str
+            assert read_v[2] == mapp_v[2] == gc_v[2], err_str
 
             data.append((read_v[0], read_v[1], read_v[2], gc_v[3],
                          mapp_v[3], read_v[3],))
@@ -72,8 +90,9 @@ class CorrectReadCount(object):
         return data
 
     def valid(self, df):
-        """
-        x$valid[x$reads <= 0 | x$gc < 0] <- FALSE
+        """adds valid column (calls with atleast one reads and non negative gc)
+
+        :params df: pandas dataframe
         """
 
         df.loc[:, "valid"] = True
@@ -83,15 +102,9 @@ class CorrectReadCount(object):
         return df
 
     def ideal(self, df):
-        """
-          x$ideal <- TRUE
-          routlier <- 0.01
-          range <- quantile(x$reads[x$valid], prob = c(0, 1 - routlier), na.rm = TRUE)
-          doutlier <- 0.001
-          domain <- quantile(x$gc[x$valid], prob = c(doutlier, 1 - doutlier),
-            na.rm = TRUE)
-          x$ideal[!x$valid | x$map < mappability | x$reads <= range[1] |
-            x$reads > range[2] | x$gc < domain[1] | x$gc > domain[2]] <- FALSE
+        """adds ideal column
+
+        :params df: pandas dataframe
         """
         df.loc[:, "ideal"] = True
 
@@ -106,19 +119,22 @@ class CorrectReadCount(object):
         domain_l, domain_h = mquantiles(valid_gc, prob=[doutlier, 1 - doutlier],
                                         alphap=1, betap=1)
 
-        df.loc[
-            (df["valid"] == False) | (
-                df["map"] < self.mappability) | (
-                df["reads"] <= range_l) | (
-                df["reads"] > range_h) | (
-                    df["gc"] < domain_l) | (
-                        df["gc"] > domain_h),
-            "ideal"] = False
+        df.loc[(df["valid"] == False) |
+               (df["map"] < self.mappability) |
+               (df["reads"] <= range_l) |
+               (df["reads"] > range_h) |
+               (df["gc"] < domain_l) |
+               (df["gc"] > domain_h),
+               "ideal"] = False
 
         return df
 
     def get_lowess_fit_gc(self, x, y):
+        """fits lowess curve to [x,y]
 
+        :param x: numpy array
+        :param y: numpy array
+        """
         lowess = sm.nonparametric.lowess(x, y, frac=.03)
         # unpack the lowess smoothed points to their values
         lowess_x = list(zip(*lowess))[0]
@@ -139,6 +155,11 @@ class CorrectReadCount(object):
         return f
 
     def get_poly_fit(self, x, y):
+        """fits polynomial curve to [x,y] with degree=self.polynomial_degree
+
+        :param x: numpy array
+        :param y: numpy array
+        """
 
         z = np.polyfit(x, y, self.polynomial_degree)
         p = np.poly1d(z)
@@ -146,6 +167,11 @@ class CorrectReadCount(object):
         return p
 
     def get_lowess_fit_mapp(self, x, y):
+        """fits lowess curve to [x,y]
+
+        :param x: numpy array
+        :param y: numpy array
+        """
         lowess = sm.nonparametric.lowess(x, y, frac=.03)
         # unpack the lowess smoothed points to their values
         lowess_x = list(zip(*lowess))[0]
@@ -156,6 +182,10 @@ class CorrectReadCount(object):
         return f
 
     def correct_gc(self, df):
+        """calculate corrected gc values with the specified model
+
+        :param df: pandas dataframe
+        """
 
         # only keep ideal val
         ideal_df = df.loc[df["ideal"] == True]
@@ -178,6 +208,10 @@ class CorrectReadCount(object):
         return df
 
     def correct_mapp(self, df):
+        """calculate corrected map values with the specified model
+
+        :param df: pandas dataframe
+        """
 
         valid_gc = df[df["valid"]]["cor.gc"].dropna()
 
@@ -209,12 +243,17 @@ class CorrectReadCount(object):
         return df
 
     def write(self, df):
+        """write results to the output file
+
+        :param df: pandas dataframe
+        """
+
         df.to_csv(self.output, index=False, sep=',', na_rep="NA")
 
     def main(self):
         gc = self.read_wig(self.gc)
         mapp = self.read_wig(self.mapp)
-        reads = self.read_wig(self.wig, reads=True)
+        reads = self.read_wig(self.wig, counts=True)
 
         df = self.create_dataframe(reads, mapp, gc)
 
@@ -228,6 +267,9 @@ class CorrectReadCount(object):
 
 
 def parse_args():
+    """
+    parses command line arguments
+    """
 
     parser = argparse.ArgumentParser()
 
