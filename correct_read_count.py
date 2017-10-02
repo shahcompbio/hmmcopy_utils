@@ -299,6 +299,13 @@ def parse_args():
                         type=float,
                         help='specify mappability threshold')
 
+    parser.add_argument('--degree',
+                        default=2,
+                        type=int,
+                        help='specify degree for the polynomial fit, only '\
+                        'used if the smoothing function is set to polynomial')
+
+
     args = parser.parse_args()
 
     return args
@@ -310,6 +317,7 @@ if __name__ == '__main__':
     corr = CorrectReadCount(args.gc, args.map, args.reads, args.output,
                             mappability=args.mappability,
                             smoothing_function=args.smoothing_function,
+                            polynomial_degree=args.degree
                             )
 
     corr.main()
