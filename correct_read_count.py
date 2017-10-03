@@ -3,15 +3,15 @@ Created on Sep 27, 2017
 
 @author: dgrewal
 '''
+
+import argparse
 import numpy as np
 import pandas as pd
 from math import log
 import statsmodels.api as sm
 from scipy.interpolate import interp1d
 from scipy.stats.mstats import mquantiles
-
-import argparse
-
+import numpy.polynomial.polynomial as poly
 
 class CorrectReadCount(object):
     """
@@ -161,10 +161,10 @@ class CorrectReadCount(object):
         :param y: numpy array
         """
 
-        z = np.polyfit(x, y, self.polynomial_degree)
-        p = np.poly1d(z)
+        coefs = poly.polyfit(x,y, self.polynomial_degree)
+        c =  poly.polyval(x, coefs)
 
-        return p
+        return c
 
     def get_lowess_fit_mapp(self, x, y):
         """fits lowess curve to [x,y]
@@ -194,11 +194,10 @@ class CorrectReadCount(object):
         reads = np.array(ideal_df["reads"])
 
         if self.smoothing_function == 'polynomial':
-            f = self.get_poly_fit(reads, gc)
+            preds = self.get_poly_fit(reads, gc)
         else:
             f = self.get_lowess_fit_gc(reads, gc)
-
-        preds = f(ideal_df["gc"])
+            preds = f(ideal_df["gc"])
 
         ideal_df.loc[:, 'cor.gc'] = ideal_df["reads"] / preds
 
@@ -223,11 +222,12 @@ class CorrectReadCount(object):
         ideal_df = df.loc[(df["cor.gc"] < range_h)]
 
         if self.smoothing_function == 'polynomial':
-            f = self.get_poly_fit(ideal_df["map"], ideal_df["cor.gc"])
+            preds = self.get_poly_fit(ideal_df["map"], ideal_df["cor.gc"])
         else:
             f = self.get_lowess_fit_mapp(ideal_df["map"], ideal_df["cor.gc"])
+            preds = f(ideal_df["map"])
 
-        ideal_df.loc[:, "cor.map"] = ideal_df["cor.gc"] / f(ideal_df["map"])
+        ideal_df.loc[:, "cor.map"] = ideal_df["cor.gc"] / preds
         ideal_df.loc[:, "copy"] = ideal_df["cor.map"]
 
         ideal_df.loc[ideal_df["copy"] <= 0] = float('nan')
