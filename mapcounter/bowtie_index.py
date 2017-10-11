@@ -7,13 +7,25 @@ from subprocess import PIPE, Popen
 import argparse
 
 class bowtieIndex(object):
+    """
+    aligns simulated reads from the reference fasta file.
+    """
+    
     def __init__(self, infile, outfile, reference, bwt_path):
+        """
+        :param infile: sam file with reads simulated from the reference fasta
+        :param outfile: output file with aligned reads in bowtie's output format
+        :param reference: reference fasta file (must be bowtie indexed)
+        :param bwt_path: path to bowtie executable
+        """
         self.input = infile
         self.output = outfile
         self.bowtie = bwt_path
         self.reference = reference
      
     def cmd(self):
+        """build the command string
+        """
         cmd = [self.bowtie, self.reference,
                '-f', self.input, '-v',
                '0', '--quiet', '>', self.output]
@@ -21,6 +33,9 @@ class bowtieIndex(object):
         return cmd
 
     def main(self):
+        """
+        run bowtie on input file
+        """
         cmd = self.cmd()
 
         cmd = " ".join(cmd)

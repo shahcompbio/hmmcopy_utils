@@ -9,12 +9,25 @@ import argparse
 
 
 class MapCounter(object):
+    """read the mappability bigwig file, calculate mappability
+    for the bins and write to a wiggle file
+    """
     def __init__(self, infile, outfile, winsize):
+        """
+        :param infile:input mappability bigwig file
+        :param outfile: output mappability wig file
+        :param winsize: (int) window_size
+        """
         self.input = infile
         self.output = outfile
         self.window_size = winsize
 
     def gen_range(self, start, stop, step):
+        """divide the input region (start,stop) into step sized regions
+        :param start: (int) start position
+        :param stop: (int) stop position
+        :param step: (int) window size
+        """
         current = start
         while current < stop:
             next_current = current + step
@@ -25,6 +38,9 @@ class MapCounter(object):
             current = next_current
 
     def main(self):
+        """reads bigwig and calculates mappability values
+        :raises Exception: if window_size is larger than the chromosome length
+        """
         infile = pybw.open(self.input)
         output = open(self.output, 'w')
         
@@ -41,7 +57,6 @@ class MapCounter(object):
             for start, stop in self.gen_range(1, len_chr, self.window_size):
                 val = infile.values(chrom, start, stop)
                 output.write("{0:.5f}".format(sum(val)/len(val)) + "\n")
-#                 output.write(','.join(map(str,[start, sum(val), len(val)])) + '\n')
 
         infile.close()
         output.close()
