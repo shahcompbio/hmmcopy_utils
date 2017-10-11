@@ -3,11 +3,9 @@ Created on Sep 27, 2017
 
 @author: dgrewal
 '''
-
 import argparse
 import numpy as np
 import pandas as pd
-from math import log
 import statsmodels.api as sm
 from scipy.interpolate import interp1d
 from scipy.stats.mstats import mquantiles
@@ -56,7 +54,7 @@ class CorrectReadCount(object):
                 else:
                     value = int(line) if counts else float(line)
                     data.append((chrom, (bin_start * winsize) + 1,
-                                 (bin_start + 1) * winsize, value))
+                                 (bin_start + 1) * winsize, winsize, value))
                     bin_start += 1
 
         return data
@@ -80,11 +78,12 @@ class CorrectReadCount(object):
             assert read_v[0] == mapp_v[0] == gc_v[0], err_str
             assert read_v[1] == mapp_v[1] == gc_v[1], err_str
             assert read_v[2] == mapp_v[2] == gc_v[2], err_str
+            assert read_v[3] == mapp_v[3] == gc_v[3], err_str
 
-            data.append((read_v[0], read_v[1], read_v[2], gc_v[3],
-                         mapp_v[3], read_v[3],))
+            data.append((read_v[0], read_v[1], read_v[2], read_v[3], gc_v[4],
+                         mapp_v[4], read_v[4],))
 
-        labels = ['chromosome', 'start', 'end', 'gc', 'map', 'reads']
+        labels = ['chromosome', 'start', 'end', 'width', 'gc', 'map', 'reads']
         data = pd.DataFrame(data, columns=labels)
 
         return data
@@ -129,13 +128,15 @@ class CorrectReadCount(object):
 
         return df
 
-    def get_lowess_fit_gc(self, x, y):
+    def get_lowess_fit_gc(self, x, y, x_):
         """fits lowess curve to [x,y]
 
         :param x: numpy array
         :param y: numpy array
         """
-        lowess = sm.nonparametric.lowess(x, y, frac=.03)
+        #sm lowess takes endog,exog as input, which translates to y,x
+        #returns sorted x values and corresponding smoothed y values
+        lowess = sm.nonparametric.lowess(y, x, frac=.03)
         # unpack the lowess smoothed points to their values
         lowess_x = list(zip(*lowess))[0]
         lowess_y = list(zip(*lowess))[1]
@@ -152,9 +153,9 @@ class CorrectReadCount(object):
 
         f = interp1d(lowess_x, lowess_y, bounds_error=False)
 
-        return f
+        return f(x_)
 
-    def get_poly_fit(self, x, y):
+    def get_poly_fit(self, x, y, x_):
         """fits polynomial curve to [x,y] with degree=self.polynomial_degree
 
         :param x: numpy array
@@ -162,24 +163,26 @@ class CorrectReadCount(object):
         """
 
         coefs = poly.polyfit(x,y, self.polynomial_degree)
-        c =  poly.polyval(x, coefs)
+        c =  poly.polyval(x_, coefs)
 
         return c
 
-    def get_lowess_fit_mapp(self, x, y):
+    def get_lowess_fit_mapp(self, x, y, x_):
         """fits lowess curve to [x,y]
 
         :param x: numpy array
         :param y: numpy array
         """
-        lowess = sm.nonparametric.lowess(x, y, frac=.03)
+        delta=0.01*(max(x) - min(x))
+        #x:map y:gc
+        lowess = sm.nonparametric.lowess(y,x, frac=.66, delta = delta)
         # unpack the lowess smoothed points to their values
         lowess_x = list(zip(*lowess))[0]
         lowess_y = list(zip(*lowess))[1]
 
         f = interp1d(lowess_x, lowess_y, bounds_error=False)
 
-        return f
+        return f(x_)
 
     def correct_gc(self, df):
         """calculate corrected gc values with the specified model
@@ -194,15 +197,11 @@ class CorrectReadCount(object):
         reads = np.array(ideal_df["reads"])
 
         if self.smoothing_function == 'polynomial':
-            preds = self.get_poly_fit(reads, gc)
+            preds = self.get_poly_fit(gc, reads, df["gc"])
         else:
-            f = self.get_lowess_fit_gc(reads, gc)
-            preds = f(ideal_df["gc"])
+            preds = self.get_lowess_fit_gc(gc, reads, df["gc"])
 
-        ideal_df.loc[:, 'cor.gc'] = ideal_df["reads"] / preds
-
-        df.loc[:, "cor.gc"] = float('nan')
-        df.loc[:, "cor.gc"] = ideal_df["cor.gc"]
+        df.loc[:, 'cor.gc'] = df["reads"] / preds
 
         return df
 
@@ -221,24 +220,10 @@ class CorrectReadCount(object):
 
         ideal_df = df.loc[(df["cor.gc"] < range_h)]
 
-        if self.smoothing_function == 'polynomial':
-            preds = self.get_poly_fit(ideal_df["map"], ideal_df["cor.gc"])
-        else:
-            f = self.get_lowess_fit_mapp(ideal_df["map"], ideal_df["cor.gc"])
-            preds = f(ideal_df["map"])
+        preds = self.get_lowess_fit_mapp(ideal_df["map"], ideal_df["cor.gc"], df["map"])
 
-        ideal_df.loc[:, "cor.map"] = ideal_df["cor.gc"] / preds
-        ideal_df.loc[:, "copy"] = ideal_df["cor.map"]
-
-        ideal_df.loc[ideal_df["copy"] <= 0] = float('nan')
-
-        ideal_df.loc[:, "copy"] = ideal_df['copy'].apply(lambda x: log(x, 2))
-
-        df.loc[:, "cor.map"] = float('nan')
-        df.loc[:, "cor.map"] = ideal_df["cor.map"]
-
-        df.loc[:, "copy"] = float('nan')
-        df.loc[:, "copy"] = ideal_df["copy"]
+        df.loc[:, "cor.map"] = df["cor.gc"] / preds
+        df.loc[:, "copy"] = np.log2(df['cor.map'])
 
         return df
 
