@@ -123,13 +123,21 @@ class GCCounter( object):
 def parse_args():
     parser = argparse.ArgumentParser()
     
-    parser.add_argument('reference')
-    parser.add_argument('output')
+    parser.add_argument('reference',
+                        help="path to the reference fasta file. The reference"\
+                       " must be indexed with bowtie-build and samtools index")
+                        
+    parser.add_argument('output',
+                        help="path to the output file")
+
     parser.add_argument('--chromosomes',
-                        nargs='*')
+                        nargs='*',
+                        help="specify target chromosomes")
+
     parser.add_argument('--window_size',
                         type=int,
-                        default=1000)
+                        default=1000,
+                        help="specify window size.")
 
     args = parser.parse_args()
     

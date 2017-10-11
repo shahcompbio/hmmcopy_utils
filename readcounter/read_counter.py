@@ -159,22 +159,30 @@ class ReadCounter(object):
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('bam')
-    parser.add_argument('output')
+    parser.add_argument('bam',
+                        help='specify the path to the input bam file')
+
+    parser.add_argument('output',
+                        help='specify path to the output file')
     parser.add_argument('--chromosomes',
                         nargs='*',
-                        default=map(str, range(1, 23)) + ['X', 'Y']
+                        default=map(str, range(1, 23)) + ['X', 'Y'],
+                        help='specify target chromosomes'
                         )
     parser.add_argument('-w', '--window_size',
                         type=int,
-                        default=1000)
+                        default=1000,
+                        help='specify bin size')
     parser.add_argument('-m', '--mapping_quality_threshold',
                         type=int,
-                        default=0)
+                        default=0,
+                        help='threshold for the mapping quality, reads '\
+                        'with quality lower than threshold will be ignored')
 
     parser.add_argument('--seg',
                         default=False,
-                        action='store_true')
+                        action='store_true',
+                        help='write the output in seg format')
 
     args = parser.parse_args()
 
