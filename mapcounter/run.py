@@ -7,7 +7,7 @@ Created on Aug 30, 2017
 
 from fasta_to_read import FastaToRead
 from bowtie_index import bowtieIndex
-from mapcounter import MapCounter
+from map_counter import CountMappability
 from read_to_map import readToMap
 
 import argparse
@@ -45,22 +45,50 @@ def parse_args():
     return args
 
 
+class MapCounter(object):
+    """
+    runs all subprograms for mapcounter in one command
+    keeps format consistent between read counter, mapcounter and read counter
+    """
+    
+    def __init__(self, temp_dir, output, reference, chromosomes, aligner, maxhits, window_size,mapcounter_window_size, cleanup):
+        self.temp_dir = temp_dir
+        self.output = output
+        self.reference = reference
+        self.chromosomes = chromosomes
+        self.aligner = aligner
+        self.maxhits = maxhits
+        self.window_size = window_size
+        self.mapcounter_window_size = mapcounter_window_size
+        self.cleanup = cleanup
+    
+    
+    def main(self):
+        fasta_read = os.path.join(self.temp_dir, 'fasta_reads.txt')
+        aln_out = os.path.join(self.temp_dir, 'aln_out.sam')
+        bigwig = os.path.join(self.temp_dir, 'bigwig.txt')
+    
+    
+        FastaToRead(self.reference, fasta_read, self.chromosomes, self.window_size).main()
+        bowtieIndex(fasta_read, aln_out, self.reference, self.aligner).main()
+        readToMap(aln_out, bigwig, self.maxhits).main()
+        CountMappability(bigwig, self.output, self.mapcounter_window_size).main()
+    
+        if self.cleanup:
+            try:
+                os.rmdir(self.temp_dir)
+            except OSError:
+                raise
+
+
 if __name__ == '__main__':
     
     args = parse_args() 
 
-    fasta_read = os.path.join(args.temp_dir, 'fasta_reads.txt')
-    aln_out = os.path.join(args.temp_dir, 'aln_out.sam')
-    bigwig = os.path.join(args.temp_dir, 'bigwig.txt')
 
+    mapc = MapCounter(args.temp_dir, args.output, args.reference,
+                      args.chromosomes, args.aligner, args.maxhits,
+                      args.window_size, args.mapcounter_window_size,
+                      args.cleanup)
 
-    FastaToRead(args.reference, fasta_read, args.chromosomes, args.window_size).main()
-    bowtieIndex(fasta_read, aln_out, args.reference, args.aligner).main()
-    readToMap(aln_out, bigwig, args.maxhits).main()
-    MapCounter(bigwig, args.output, args.mapcounter_window_size).main()
-
-    if args.cleanup:
-        try:
-            os.rmdir(args.tempdir)
-        except OSError:
-            raise
+    mapc.main()
