@@ -9,7 +9,17 @@ import argparse
 
 
 class GCCounter( object):
+    """
+    calculates gc scores for segments of specified size
+    """
     def __init__(self, ref_file, output, chromosomes, window_size):
+        """
+        :param ref_file: (str) reference fasta file
+        :param output: (str) output wig file path
+        :param chromosomes: list of target chromosomes (list of strings)
+        :param window_size: (int) window sizre for binning genome
+        """
+
         self.reference = ref_file
         self.window_size = window_size
 
@@ -25,22 +35,43 @@ class GCCounter( object):
         self.output = output
         
     def __get_fasta_reader(self):
+        """returns pysam fasta object
+        :returns pysam fasta object
+        """
         self.fasta = pysam.FastaFile(self.reference)
         
     def __get_sequence(self, chrom, start, end):
+        """returns sequence from the specified region
+        :param chrom: chromosome name (str)
+        :param start: bin starting pos (int)
+        :param end: bin end pos (int)
+        :returns (str) sequence
+        """
         return self.fasta.fetch(chrom, start, end)
 
     def __get_chr_lengths(self):
+        """ returns dict with chromosome names and lengths
+        :returns dictionary with chromosome name (str) and lengths(int)
+        :rtype dictionary
+        """
         lengths = self.fasta.lengths
         names = self.fasta.references
         
         return {name:length for name,length in zip(names, lengths)}
     
     def __get_chr_names(self):
+        """extracts chromosome names from the bam file
+        :returns list of chromosome names
+        :rtype list 
+        """
         return self.fasta.references
     
     
     def get_gc_content(self, seq):
+        """calculates gc content from a list
+        :param seq: (str) sequence
+        :returns (float) gc_content for the sequence
+        """
         length = 0
         gc = 0
         n =0 
@@ -68,6 +99,8 @@ class GCCounter( object):
         return gc_content
     
     def main(self):
+        """calculates gc content for bins
+        """
         with open(self.output, 'w') as outfile:
             for chromosome in self.chromosomes:
                 outfile.write('fixedStep chrom=%s start=1 step=%s span=%s \n' %(chromosome, self.window_size, self.window_size))
