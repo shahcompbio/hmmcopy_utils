@@ -137,12 +137,11 @@ class TestMapCounter(unittest.TestCase):
         self.hmmcopy_ref = os.path.join(ref, 'map_counter_hmm.wig')
         self.reference = os.path.join(ref, 'GRCh37-lite.fa')
         self.output = os.path.join(self.tempdir, 'mapcounter_out.txt')
-        self.window_size = 1000
+        self.window_size = 50
         self.chromosomes = ['Y']
 
     def tearDown(self):
-        pass
-#         shutil.rmtree(self.tempdir)
+        shutil.rmtree(self.tempdir)
 
     def run_gccounter(self):
         MapCounter(self.tempdir, self.output, self.reference, self.chromosomes,
@@ -168,7 +167,9 @@ class TestMapCounter(unittest.TestCase):
 
             indata = [float(l.strip()) for l in infile]
 
-            self.assertEqual(data, indata, 'results did not match')
+            # some randomness is caused by bigwigs and alignment.
+            max_diff = max([abs(av - bv) for av, bv in zip(data, indata)])
+            self.assertLess(max_diff, 0.01, 'the output and ref did not match')
 
     def test(self):
         self.run_gccounter()
