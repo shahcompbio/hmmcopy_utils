@@ -35,10 +35,12 @@ def parse_args():
 
     parser.add_argument('--window_size',
                         default=50,
+                        type="int",
                         help="specify window size for simulating reads")
 
     parser.add_argument('--mapcounter_window_size',
                         default=1000,
+                        type='int',
                         help='specify the window size for mapcounter wig file'\
                         ' generation')
 
