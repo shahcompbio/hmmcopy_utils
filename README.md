@@ -19,7 +19,7 @@ Please run python <path to script> -h for more details.
 
 tests must be run on genesis:
 ```
-sh run.sh
+sh run_test.sh
 ```
 to run tests
 
@@ -29,3 +29,4 @@ TODO:
 
 1. Add entrypoints
 2. add support for different aligners
+
