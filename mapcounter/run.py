@@ -92,9 +92,9 @@ class MapCounter(object):
     
         FastaToRead(self.reference, fasta_read, self.chromosomes, self.window_size).main()
         bowtieIndex(fasta_read, aln_out, self.reference, self.aligner).main()
-        readToMap(aln_out, bigwig, self.maxhits).main()
+        readToMap(aln_out, bigwig, self.reference, self.chromosomes, self.maxhits).main()
         CountMappability(bigwig, self.output, self.mapcounter_window_size).main()
-    
+
         if self.cleanup:
             try:
                 os.rmdir(self.temp_dir)
