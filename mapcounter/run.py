@@ -31,6 +31,7 @@ def parse_args():
 
     parser.add_argument('--chromosomes',
                         nargs='*',
+                        default=map(str, range(1,23)) + ['X','Y'],
                         help="specify target chromosomes")
 
     parser.add_argument('--window_size',
