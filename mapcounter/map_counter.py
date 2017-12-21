@@ -5,7 +5,7 @@ Created on Aug 31, 2017
 '''
 import pyBigWig as pybw
 import argparse
-
+import numpy as np
 
 
 class CountMappability(object):
@@ -58,7 +58,7 @@ class CountMappability(object):
             
             for start, stop in self.gen_range(1, len_chr, self.window_size):
                 val = infile.values(chrom, start, stop)
-                output.write("{0:.5f}".format(sum(val)/len(val)) + "\n")
+                output.write("{0:.5f}".format(np.nansum(val)/len(val)) + "\n")
 
         infile.close()
         output.close()
