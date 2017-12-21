@@ -27,8 +27,9 @@ class bowtieIndex(object):
         """build the command string
         """
         cmd = [self.bowtie, self.reference,
-               '-f', self.input, '-v',
-               '0', '--quiet', '>', self.output]
+               '-f', self.input, '-v', '0',
+               '--quiet', '|' 'gzip', '-',
+               '>', self.output]
      
         return cmd
 

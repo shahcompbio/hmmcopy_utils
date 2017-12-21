@@ -7,7 +7,7 @@ import pysam
 import argparse
 from collections import deque
 from itertools import islice
-
+import gzip
 
 class FastaToRead(object):
     """simulate reads from the fasta file
@@ -101,7 +101,7 @@ class FastaToRead(object):
         """runs a sliding window from beginning to end of chromosome,
         prints sequences to output
         """
-        with open(self.output, 'w') as outfile:
+        with gzip.open(self.output, 'wb') as outfile:
             for chromosome in self.chromosomes:
                 if chromosome not in self.chr_lengths:
                     raise Exception("Invalid chromosome")

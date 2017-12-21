@@ -7,6 +7,7 @@ import argparse
 import pyBigWig as pybw
 import pysam
 import numpy as np
+import gzip
 
 class readToMap(object):
     """generates mappability bigwig file from the aligned bowtie output
@@ -23,12 +24,6 @@ class readToMap(object):
         self.maxhits = maxhits
         self.chr_lengths = self.__get_chr_lengths(reference)
         self.chromosomes = chromosomes
-
-
-    def __get_fasta_reader(self):
-        """returns pysam fasta object
-        :returns pysam fasta object
-        """
 
     def __get_chr_lengths(self, reference):
         """ returns dict with chromosome names and lengths
@@ -57,7 +52,7 @@ class readToMap(object):
         expected_pos = 0
 
         values = []
-        with open(self.input) as infile:
+        with gzip.open(self.input) as infile:
             for line in infile:
                 line = line.strip()
 
@@ -69,9 +64,12 @@ class readToMap(object):
 
                 hits = float(hits)
                 pos = int(pos)
+                
+                if not last_chrom:
+                    last_chrom = chrom
 
-                if last_chrom and not chrom == last_chrom:
-                    yield chrom, values
+                if not chrom == last_chrom:
+                    yield last_chrom, values
                     last_chrom = chrom
                     expected_pos = 0
                     values = []

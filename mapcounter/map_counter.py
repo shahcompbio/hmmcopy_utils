@@ -46,6 +46,8 @@ class CountMappability(object):
         
         chromosomes = infile.chroms()
         
+#         chromosomes = sorted(chromosomes)
+        
         for chrom, len_chr in chromosomes.iteritems():
             #if window size > chromosome: raise err
             if self.window_size > len_chr:
