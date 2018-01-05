@@ -86,7 +86,7 @@ class MapCounter(object):
     
     
     def main(self):
-        fasta_read = os.path.join(self.temp_dir, 'fasta_reads.txt')
+        fasta_read = os.path.join(self.temp_dir, 'fasta_reads.txt.gz')
         aln_out = os.path.join(self.temp_dir, 'aln_out.sam')
         bigwig = os.path.join(self.temp_dir, 'bigwig.txt')
     

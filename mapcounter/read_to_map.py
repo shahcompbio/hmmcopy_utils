@@ -80,10 +80,11 @@ class readToMap(object):
                         values = []
 
                     diff = pos - expected_pos
-                    for _ in range(diff/1000000):
-                        yield chrom, np.zeros(1000000)
-                    yield chrom, np.zeros(diff%1000000)
-                    expected_pos += diff
+                    if diff:
+                        for _ in range(diff/1000000):
+                            yield chrom, np.zeros(1000000)
+                        yield chrom, np.zeros(diff%1000000)
+                        expected_pos += diff
 
                 hits += 1
                 value = 0.0
@@ -97,7 +98,7 @@ class readToMap(object):
                     yield chrom, values
                     values = []
 
-            yield chrom, values
+            yield last_chrom, values
 
     def main(self):
         output = pybw.open(self.output, "w")
