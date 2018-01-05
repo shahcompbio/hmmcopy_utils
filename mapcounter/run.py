@@ -8,7 +8,6 @@ Created on Aug 30, 2017
 from fasta_to_read import FastaToRead
 from bowtie_index import bowtieIndex
 from map_counter import CountMappability
-from read_to_map import readToMap
 
 import argparse
 import os
@@ -88,13 +87,12 @@ class MapCounter(object):
     def main(self):
         fasta_read = os.path.join(self.temp_dir, 'fasta_reads.txt.gz')
         aln_out = os.path.join(self.temp_dir, 'aln_out.sam')
-        bigwig = os.path.join(self.temp_dir, 'bigwig.txt')
     
     
         FastaToRead(self.reference, fasta_read, self.chromosomes, self.window_size).main()
         bowtieIndex(fasta_read, aln_out, self.reference, self.aligner).main()
-        readToMap(aln_out, bigwig, self.reference, self.chromosomes, self.maxhits).main()
-        CountMappability(bigwig, self.output, self.mapcounter_window_size).main()
+        CountMappability(aln_out, self.output, self.reference, self.chromosomes,
+                         self.maxhits, self.mapcounter_window_size).main()
 
         if self.cleanup:
             try:
