@@ -61,6 +61,11 @@ class CountMappability(object):
         return bins
 
     def get_bin_val(self, chrom, pos):
+        """get the bin overlapping the position provided
+        :param chrom chromosome nam
+        :param pos position
+        :returns start and end position of the bin
+        """
 
         step = self.window_size
         start = (pos / step) * step
@@ -108,7 +113,9 @@ class CountMappability(object):
         return data
 
     def write_wig(self, data):
-
+        """write wig formatted mappability scores
+        :param data parsed reads data dictionary
+        """
         with open(self.output, 'w') as outfile:
 
             for chrom, bin_data in data.iteritems():
