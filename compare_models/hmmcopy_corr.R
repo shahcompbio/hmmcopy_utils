@@ -45,7 +45,7 @@ df <- df[complete.cases(df), ]
 
 df$cor_reads <-  cor_reads
 
-plot(ideal$reads, ideal$gc, type='p', col=rgb(1, 0, 0, 0.5), main=paste(sampleid, 'HMMcopy', sep=' '))
+plot(ideal$reads, ideal$gc, type='p', col=rgb(1, 0, 0, 0.5), main=paste(sampleid, 'loess', sep=' '))
 lines(df$cor_reads, df$gc)
 #plot stop
 

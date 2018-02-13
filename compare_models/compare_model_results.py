@@ -5,7 +5,8 @@ Created on Sep 29, 2017
 '''
 from subprocess import Popen, PIPE
 from correct_read_count import CorrectReadCount
-from PyPDF2 import PdfFileMerger
+
+from PyPDF2 import PdfFileMerger, PdfFileReader, PdfFileWriter
 
 import pandas as pd
 import numpy as np
@@ -14,12 +15,21 @@ from scipy.stats.stats import pearsonr
 import os
 import argparse
 import math
-
+import warnings
 
 import matplotlib
 matplotlib.use('agg')
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+
+def normalize_reads(df):
+    if 'valid' not in df.columns.values:
+        df['norm'] = float('nan')
+    else:
+        df['norm'] = df['reads']/np.median(df['reads'])
+        df['norm'] = df['norm'].where(df['valid'] == True)
+    return(df)
+
 
 class Compare(object):
     def __init__(self, infiles, gc, mapp, tempdir, outdir, mappability=0.9, smoothing_function='lowess', degree=2):
@@ -41,6 +51,12 @@ class Compare(object):
 
         self.smoothing_function = smoothing_function
         self.degree = degree
+
+
+        self.mode = self.smoothing_function
+        if self.mode == 'polynomial':
+            self.mode += "_"+str(self.degree)
+
 
     @staticmethod
     def merge_pdf(infiles, outfile):
@@ -109,13 +125,16 @@ class Compare(object):
             csvs[sampid] = output
 
             if not os.path.exists(plot_out) or not os.path.exists(output):
-                c = CorrectReadCount(self.gc, self.map, inf, output, plot_out,
-                                     sampid, mappability=args.mappability,
+                c = CorrectReadCount(self.gc, self.map, inf, output, plot_out, sampid,
+                                     mappability=args.mappability,
                                     smoothing_function=smoothing,
                                     polynomial_degree=degree)
                 c.main()
 
         return plots, csvs
+
+    def plot_pycorr(self, infile, outfile):
+        pass
 
     def plot_df(self, pearson_data, mean_data):
         plots = os.path.join(self.outdir, 'plots.pdf')
@@ -150,7 +169,7 @@ class Compare(object):
 
         pearson_data = []
         mean_diff = []
-        
+
         for sampid, hmm_data in hmm.iteritems():
             hmm_data = pd.read_csv(hmm_data)
             pycorr_data = pd.read_csv(pycorr[sampid])
@@ -163,7 +182,7 @@ class Compare(object):
             
             if df.empty:
                 continue           
-            
+
             gc_corr =  pearsonr(df["cor.gc_hmmcopy"], df["cor.gc_pycorr"])[0]
             map_corr =  pearsonr(df["cor.map_hmmcopy"], df["cor.map_pycorr"])[0]
 
@@ -187,6 +206,7 @@ class Compare(object):
         
 
         for sampid, hmm_data in hmm.iteritems():
+
             hmm_data = pd.read_csv(hmm_data)
             pycorr_data = pd.read_csv(pycorr[sampid])
             
@@ -199,9 +219,26 @@ class Compare(object):
             if df.empty:
                 continue           
 
+            skip=False
+            if np.isinf(df["cor.map_hmmcopy"]).all() or np.isnan(df["cor.map_hmmcopy"]).all():
+                print("%s sample skipped: hmmcopy map" %sampid)
+                skip=True
+            if np.isinf(df["cor.gc_hmmcopy"]).all() or np.isnan(df["cor.gc_hmmcopy"]).all():
+                print("%s sample skipped: hmmcopy gc" %sampid)
+                skip=True
+            if np.isinf(df["cor.map_pycorr"]).all() or np.isnan(df["cor.map_pycorr"]).all():
+                print("%s sample skipped: py map" %sampid)
+                skip=True
+            if np.isinf(df["cor.gc_pycorr"]).all() or np.isnan(df["cor.gc_pycorr"]).all():
+                print("%s sample skipped: py gc" %sampid)
+                skip=True
+            if skip:
+                continue
+
             gc = [abs(np.subtract(a,b)) for a,b in zip(df["cor.gc_hmmcopy"], df["cor.gc_pycorr"]) if not math.isnan(np.subtract(a,b))]
             mapp = [abs(np.subtract(a,b)) for a,b in zip(df["cor.map_hmmcopy"], df["cor.map_pycorr"]) if not math.isnan(np.subtract(a,b))]
            
+
             if not gc:
                 continue
             if not mapp:
@@ -218,6 +255,7 @@ class Compare(object):
             plt.close()
         plots.close()
 
+
     def plot_scatter(self, hmm, pycorr):
 
         plots = os.path.join(self.outdir, 'scatterplots.pdf')
@@ -226,53 +264,88 @@ class Compare(object):
 
         for sampid, hmm_data in hmm.iteritems():
             hmm_data = pd.read_csv(hmm_data)
+            hmm_data = normalize_reads(hmm_data)
             pycorr_data = pd.read_csv(pycorr[sampid])
-            
-            df = pd.merge(hmm_data, pycorr_data,
-                          on=['chromosome','start','end', 'reads', 'gc', 'map'],
-                          suffixes=["_hmmcopy", "_pycorr"])
-            
-            df = df.dropna() 
-            
-            if df.empty:
-                continue           
+            pycorr_data = normalize_reads(pycorr_data)
 
+            pycorr_data = pycorr_data[pycorr_data['ideal'] == True]
+            hmm_data = hmm_data[hmm_data["ideal"]==True]
 
-            plt.Figure()
+            pycorr_data = pycorr_data.dropna()
+            hmm_data = hmm_data.dropna()
+
+            if pycorr_data.empty:
+                continue
+
+            if hmm_data.empty:
+                continue
+
             #plot hmm
             # Four axes, returned as a 2-d array
-            _, axarr = plt.subplots(2, 2, sharex=True, sharey=True)
+            fig, axarr = plt.subplots(3, 2, sharex='col', sharey='row')
+            fig.set_size_inches(10,15)
+
+
+            axarr[0,0].scatter(pycorr_data["gc"], pycorr_data["reads"], alpha=0.1, s=4)
+            axarr[0, 0].set_title('Uncorrected', fontsize=8)
+
+            axarr[0,1].scatter(pycorr_data["map"], pycorr_data["reads"], alpha=0.1, s=4)
+            axarr[0, 1].set_title('Uncorrected', fontsize=8)
+
+            not_null = pycorr_data['cor.gc'].notnull()
+            axarr[1,0].scatter(pycorr_data["gc"][not_null], pycorr_data["cor.gc"][not_null], alpha=0.1, s=4)
+            axarr[1, 0].set_title('corrected ' + self.mode, fontsize=8)
+
+            axarr[1,1].scatter(pycorr_data["map"][not_null], pycorr_data["cor.map"][not_null], alpha=0.1, s=4)
+            axarr[1, 1].set_title('corrected ' + self.mode, fontsize=8)
+
+            not_null = hmm_data['cor.gc'].notnull()
+            axarr[2,0].scatter(hmm_data["gc"][not_null], hmm_data["cor.gc"][not_null], alpha=0.1, s=4)
+            axarr[2, 0].set_title('corrected hmm', fontsize=8)
+
+            axarr[2,1].scatter(hmm_data["map"][not_null], hmm_data["cor.map"][not_null], alpha=0.1, s=4)
+            axarr[2, 1].set_title('corrected hmm', fontsize=8)
+
+            axarr[2,0].set_xlabel("gc", fontsize=8)
+            axarr[2,1].set_xlabel("map", fontsize=8)
             
-            
-            axarr[0,0].scatter(df["reads"], df["cor.gc_pycorr"], alpha=0.01, s=4)
-            axarr[0, 0].set_title('reads vs gc corrected py')
-            axarr[0,1].scatter(df["reads"], df["cor.gc_hmmcopy"], alpha=0.01, s=4)
-            axarr[0, 1].set_title('reads vs gc corrected hmmcopy')
-            
-            axarr[1,0].scatter(df["reads"], df["cor.map_pycorr"], alpha=0.01, s=4)
-            axarr[1, 0].set_title('reads vs map corrected py')
-            axarr[1,1].scatter(df["reads"], df["cor.map_hmmcopy"], alpha=0.01, s=4)
-            axarr[1, 1].set_title('reads vs map corrected hmmcopy')
-            
-            axarr[0,0].set_ylim((0,2.5))
-            axarr[0,0].set_ylabel("gc")
-            axarr[1,0].set_ylabel("map")
-            
-            axarr[1,0].set_xlabel("reads")
-            axarr[1,1].set_xlabel("reads")
-            
-            plt.suptitle(sampid)
+            axarr[0,0].set_ylabel("reads", fontsize=8)
+            axarr[1,0].set_ylabel(" normalized reads", fontsize=8)
+            axarr[2,0].set_ylabel(" normalized reads", fontsize=8)
+
+            plt.suptitle(sampid, fontsize=8)
             
             plots.savefig()
             plt.close()
         plots.close()
 
+    def merge_by_cell(self, hmm_plots, py_plots, tempdir, output):
+        samples = [v.replace('.wig','') for v in hmm_plots.keys()]
+
+        for sample in samples:
+            hmmplot = os.path.join(tempdir, sample+".wig_hmmcopy.pdf")
+            pyplot = os.path.join(tempdir,sample+".wig_py.pdf")
+
+            outpdf = os.path.join(tempdir,sample+"_merged.pdf")
+
+            cmd = ['pdfjam', hmmplot, pyplot, '--nup 2x1', '--landscape', '--outfile', outpdf]
+
+            self.run_cmd(cmd)
+
+        merger = PdfFileMerger()
+
+        for infile in samples:
+            infile = os.path.join(tempdir,infile+"_merged.pdf")
+            merger.append(open(infile, 'rb'))
+
+        with open(output, 'wb') as fout:
+            merger.write(fout)
+
     def main(self):
         hmm_plots, hmm_csv = self.run_hmmcopy()
         py_plots, py_csv = self.run_py_read_corr(self.smoothing_function, self.degree)
-        
-        self.merge_pdf(hmm_plots, os.path.join(self.outdir, 'hmm.pdf'))
-        self.merge_pdf(py_plots, os.path.join(self.outdir, 'py.pdf'))
+
+        self.merge_by_cell(hmm_plots, py_plots, self.tempdir, os.path.join(self.outdir, 'corr.pdf'))
 
         #some comparison metrics
         self.plot_metrics(hmm_csv, py_csv)
