@@ -6,7 +6,7 @@ Created on Sep 22, 2017
 
 import pysam
 import argparse
-
+import os
 
 class GCCounter( object):
     """
@@ -33,7 +33,15 @@ class GCCounter( object):
         self.chr_lengths = self.__get_chr_lengths()
         
         self.output = output
-        
+
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        #clean up output if there are any exceptions
+        if exc_type and os.path.exists(self.output):
+            os.remove(self.output)
+
     def __get_fasta_reader(self):
         """returns pysam fasta object
         :returns pysam fasta object
@@ -104,7 +112,7 @@ class GCCounter( object):
         with open(self.output, 'w') as outfile:
             for chromosome in self.chromosomes:
                 outfile.write('fixedStep chrom=%s start=1 step=%s span=%s \n' %(chromosome, self.window_size, self.window_size))
-                
+
                 if chromosome not in self.chr_lengths:
                     raise Exception("Invalid chromosome")
             
@@ -146,4 +154,5 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
 
-    GCCounter(args.reference, args.output, args.chromosomes, args.window_size).main()
+    with GCCounter(args.reference, args.output, args.chromosomes, args.window_size) as gc:
+        gc.main()

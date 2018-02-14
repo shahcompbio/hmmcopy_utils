@@ -3,7 +3,7 @@ Created on Oct 10, 2017
 
 @author: dgrewal
 '''
-
+import os
 import pysam
 import argparse
 
@@ -31,6 +31,15 @@ class ReadCounter(object):
         self.mapq_threshold = mapq
 
         self.seg = seg
+
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        #clean up output if there are any exceptions
+        if exc_type and os.path.exists(self.output):
+            os.remove(self.output)
+
 
     def __get_chr_lengths(self):
         """ returns dict with chromosome names and lengths
@@ -190,7 +199,7 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    rcount = ReadCounter(args.bam, args.output, args.window_size,
-                         args.chromosomes, args.mapping_quality_threshold,
-                         args.seg)
-    rcount.main()
+    with ReadCounter(args.bam, args.output, args.window_size,
+                     args.chromosomes, args.mapping_quality_threshold,
+                     args.seg) as rcount:
+        rcount.main()

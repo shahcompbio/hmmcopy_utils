@@ -5,6 +5,7 @@ Created on Aug 30, 2017
 '''
 from subprocess import PIPE, Popen
 import argparse
+import os
 
 class bowtieIndex(object):
     """
@@ -22,6 +23,15 @@ class bowtieIndex(object):
         self.output = outfile
         self.bowtie = bwt_path
         self.reference = reference
+
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        #clean up output if there are any exceptions
+        if exc_type and os.path.exists(self.output):
+            os.remove(self.output)
+
      
     def cmd(self):
         """build the command string
@@ -40,6 +50,8 @@ class bowtieIndex(object):
         cmd = self.cmd()
 
         cmd = " ".join(cmd)
+
+        print cmd
 
         cmd = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
           
@@ -67,4 +79,5 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
 
-    bowtieIndex(args.input, args.output, args.reference, args.bowtie).main()
+    with bowtieIndex(args.input, args.output, args.reference, args.bowtie) as bwt:
+        bwt.main()

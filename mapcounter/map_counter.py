@@ -6,8 +6,8 @@ Created on Aug 29, 2017
 import argparse
 import pysam
 from collections import defaultdict
-
-
+import os
+import gzip
 class CountMappability(object):
     """generates mappability bigwig file from the aligned bowtie output
     """
@@ -25,6 +25,15 @@ class CountMappability(object):
         self.maxhits = maxhits
         self.chr_lengths = self.__get_chr_lengths(reference)
         self.chromosomes = chromosomes
+
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        #clean up output if there are any exceptions
+        if exc_type and os.path.exists(self.output):
+            os.remove(self.output)
+
 
     def __get_chr_lengths(self, reference):
         """ returns dict with chromosome names and lengths
@@ -84,14 +93,18 @@ class CountMappability(object):
         data = defaultdict(lambda: defaultdict(float))
         expected_pos = 0
 
-        with open(self.input) as infile:
+        with gzip.open(self.input) as infile:
             for line in infile:
                 line = line.strip()
 
                 if line == "":
                     continue
 
-                pos, _, _, _, _, _, hits = line.split()
+                try:
+                    pos, _, _, _, _, _, hits = line.split()
+                except:
+                    print line
+                    raise
                 chrom, pos = pos.split(":")
 
                 if chrom not in self.chromosomes:
@@ -154,10 +167,6 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
 
-    CountMappability(
-        args.input,
-        args.output,
-        args.reference,
-        args.chromosomes,
-        args.max_hits,
-        args.window_size).main()
+    with CountMappability(args.input, args.output, args.reference, args.chromosomes,\
+                          args.max_hits, args.window_size) as mapcount:
+        mapcount.main()
