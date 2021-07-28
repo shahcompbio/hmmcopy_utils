@@ -115,3 +115,48 @@ CLI:
 	Example:
 	    ./readCounter -w 100 -s 1,3,5,X aligned_reads.bam > readcounts.seg
 
+## Generating the Genome Reference Mappability File
+
+If you would like to generate your own mappability file, we provide some scripts to do so.
+
+### TLDR:
+The process is:
+1) Obtain FASTA genome file of interest
+2) Run the FASTA genome through generateMap.pl, which generates a 1-basepair resolution BigWig (.bw) file.  Note this is READLENGTH-specific. (have `--window` parameter match your expected read length)
+3) Run mapCounter with the above .bw file to generate BIN SIZE specific .wig file (have `--window` parameter match your desired bin width)
+
+### Example
+Given `refdata/Homo_sapiens.GRCh37.75.dna.primary_assembly.fa`:
+
+Note the key parameter here is `--window` which should roughly match the expected read length of the sequencing library (e.g. 125 for modern Illumina sequencers): 
+
+	$HMMCOPY_DIR/util/mappability/generateMap.pl refdata/Homo_sapiens.GRCh37.75.dna.primary_assembly.fa -o refdata/Homo_sapiens.GRCh37.75.dna.primary_assembly.fa.map.bw
+
+This may fail if you have not built a bowtie index of your reference yet. To do this, make sure first that bowtie is in your $PATH variable. Once this is done, you can go:
+
+	$HMMCOPY_DIR/util/mappability/generateMap.pl -b refdata/Homo_sapiens.GRCh37.75.dna.primary_assembly.fa -o refdata/Homo_sapiens.GRCh37.75.dna.primary_assembly.fa.map.bw
+
+This will build the bowtie index. Now you can re-run the first command. In the end, you should get a BigWig file which you then need to convert into a wig file with `mapCounter`, the key parameter here is `--window` which should match your desired bin width. You can do this by going:
+
+	$HMMCOPY_DIR/bin/mapCounter -w 1000 refdata/Homo_sapiens.GRCh37.75.dna.primary_assembly.fa.map.bw > refdata/Homo_sapiens.GRCh37.75.dna.primary_assembly.fa.map.ws_1000.wig
+
+#### On bin widths
+
+Typically a good bin width is one that allows you at least 200 reads per bin.  For 30x this means roughly bins of 1000, and for single cell sequencing (at 0.03x) this is closer to 500,000.
+
+Also, if your bin width EXCEEDS the size of any chromosome, you will end up with a chromosome with a single bin, which will cause the following error:
+
+	Initialization
+		    EM iteration: 1 Log likelihood: -Inf
+		    Expectation
+		    Error: INTEGER() can only be applied to a 'integer', not a 'NULL'
+
+Some recommended solutions are:
+1) Decrease the bin size when running readCounter, and generating the GC and mappability wig files
+2) Remove the offending chromosome line from the three input files (reads, GC, mappability), simply open the file and delete the last two lines in each that correspond to the MT chromosome
+
+### Generating the Genome Reference GC Content File
+
+You can similarly create the GC wig file with gcCounter using the same reference.  Ensure your `--window` parameter here matches that of the other readCounter and mapCounter tools.
+
+	$HMMCOPY_DIR/bin/gcCounter Homo_sapiens.GRCh37.75.dna.primary_assembly.fa > Homo_sapiens.GRCh37.75.dna.primary_assembly.gc.wig
