@@ -142,7 +142,7 @@ This will build the bowtie index. Now you can re-run the first command. In the e
 
 #### On bin widths
 
-Typically a good bin width is one that allows you at least 200 reads per bin.  For 30x this means roughly bins of 1000, and for single cell sequencing (at 0.03x) this is closer to 500,000.
+Typically a good bin width is one that allows you at least 200 reads per bin.  For 30x this means roughly bins of 1000, and for single cell sequencing (at 0.05x) this is closer to 500,000.
 
 Also, if your bin width EXCEEDS the size of any chromosome, you will end up with a chromosome with a single bin, which will cause the following error:
 
