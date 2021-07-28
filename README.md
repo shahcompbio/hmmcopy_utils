@@ -122,7 +122,7 @@ If you would like to generate your own mappability file, we provide some scripts
 ### TLDR:
 The process is:
 1) Obtain FASTA genome file of interest
-2) Run the FASTA genome through generateMap.pl, which generates a 1-basepair resolution BigWig (.bw) file.  Note this is READLENGTH-specific. (have `--window` parameter match your expected read length)
+2) Run the FASTA genome through `util/mappability/generateMap.pl`, which generates a 1-basepair resolution BigWig (.bw) file.  Note this is READLENGTH-specific. (have `--window` parameter match your expected read length)
 3) Run mapCounter with the above .bw file to generate BIN SIZE specific .wig file (have `--window` parameter match your desired bin width)
 
 ### Example
